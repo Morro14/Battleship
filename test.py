@@ -23,6 +23,7 @@ class TileError(Error):
 
 
 class Dot:
+
     def __init__(self, *args):
         if type(args[0]) == tuple:
             self.x = args[0][0]
@@ -40,8 +41,12 @@ class Dot:
         return (self.x, self.y) == (other.x, other.y)
 
     def t(self):
-        """Returns coords as a tuple"""
+        """Returns x, y as a tuple"""
         return tuple((self.x, self.y))
+
+    def rand(self, size):
+        self.x = random.randrange(1, size + 1)
+        self.y = random.randrange(1, size + 1)
 
 
 class Ship:
@@ -73,14 +78,6 @@ class Board:
     def add_ship(self, ship: Ship):
         """Tries to put the ship in the matrix """
         dots = ship.dots()
-        #  try:
-        #      for coord in dots:
-        #          dot = Dot(coord)
-        #          if dot in self.non_empty:
-        #              raise TileError
-        #  except TileError:
-        #      return 1
-
         try:
             for coord in dots:
                 dot = Dot(coord)
@@ -126,8 +123,64 @@ class Board:
                 if self.matrix[y][x] == 1:
                     print('| ∎ ', end='')
                 if self.matrix[y][x] == 2:
-                    print('|   ', end='')
+                    print('| X ', end='')
             print('|', '\n', end='')
+
+    def strike(self, dot):
+        for n in range(self.ship_list):
+            if dot in self.ship_list[n] and len(self.ship_list[n]) == 1:
+                print("Destroyed")
+
+            if dot in self.ship_list[n]:
+                self.ship_list[n].remove(dot)
+                return True
+
+        return False
+
+
+class Player:
+    def __init__(self, player_board, enemy_board):
+        self.enemy_board = enemy_board
+        self.player_board = player_board
+
+    def ask(self):
+        pass
+
+    def move(self):
+        self.ask()
+        if self.enemy_board.strike() == True:
+            self.move()
+
+
+class User(Player):
+    def __init__(self):
+        pass
+
+    def ask(self):
+        dot = Dot(tuple(input("Enter coordinates for a strike (x, y): ")))
+
+
+
+
+class AI(Player):
+    def __init__(self):
+        pass
+
+    def ask(self):
+        n = random.randrange(1, self.player_board.size + 1)
+        dot = Dot(random.randrange(n, n))
+        hits, misses = [], []
+        hit_count = 0
+
+        misses.append(dot)
+
+    def move(self):
+        n = random.randrange(1, self.player_board.size + 1)
+        dot = Dot(random.randrange(n, n))
+        hits, misses = [], []
+        hit_count = 0
+
+        misses.append(dot)
 
 
 class Game:
@@ -135,7 +188,6 @@ class Game:
     def __init__(self) -> None:
 
         pass
-
 
     def random_board(self):
         """Generating random ships and placing them on the board"""
