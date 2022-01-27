@@ -16,7 +16,7 @@ class MaxIterError(Error):
         return str(f"A maximum number of iterations {self.limit} has been reached.")
 
 
-class TileError(Error):
+class TileBusyException(Error):
     """Error that is called when the tile on the field is not eligible"""
 
     def __str__(self):
@@ -72,7 +72,7 @@ class Ship:
         if 1 <= health_ <= 3:
             self.health = health_
         else:
-            raise ValueError("health_ value is not correct")
+            raise ValueError(f"{health_} value is not correct")
 
 
 class Board:
@@ -160,15 +160,10 @@ class Board:
     def add_ship(self, ship: Ship):
         """Attempts to put the ship's dots in the matrix. Adds its dots into self.non_empty list if successful."""
         dots = ship.dots()
-#        try:
         for coord in dots:
             dot = Dot(coord)
             if dot in self.non_empty or self.out(dot):
-                raise TileError
-#        except IndexError:
-#            return 1
-#        except TileError:
-#            return 1
+                raise TileBusyException
 
         self.non_empty += ship.dots()
         for coord in dots:
@@ -260,7 +255,6 @@ class User(Player):
                 print("Coordinates must be digits.")
                 continue
 
-
         time.sleep(1)
         print(f"User is firing at {dot}..")
         time.sleep(1)
@@ -328,7 +322,7 @@ class Game:
                 try:
                     board.add_ship(ship)
 
-                except TileError:
+                except TileBusyException:
                     loop_count += 1
                     continue
                 else:
@@ -340,11 +334,9 @@ class Game:
         return board
 
     def greet(self):
-        print('')
-        print(
-            f'Welcome to Battleship! The game will be going against AI on a {self.user_board.size}x{self.ai_board.size} '
-            f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
-        Board.print(self.user_board, self.ai_board, )
+        print(f'\nWelcome to Battleship! The game will be going against AI on a {self.user_board.size}x'
+              f'{self.ai_board.size} field. \nDuring your turn, enter the coordinates of your strike in a '
+              f'"x y" format.')
 
     def start(self):
         game.greet()
@@ -352,6 +344,7 @@ class Game:
 
     def loop(self):
         while True:
+            Board.print(self.user_board, self.ai_board, )
             while self.user.move() != 4:  # 4 - miss
                 time.sleep(1)
                 Board.print(self.user_board, self.ai_board, )
@@ -364,12 +357,8 @@ class Game:
 
             while self.ai.move() != 4:  # 4 - miss
                 time.sleep(1)
-                Board.print(self.user_board, self.ai_board, )
-                time.sleep(1)
             if self.ai.win_check():
                 break
-            time.sleep(1)
-            Board.print(self.user_board, self.ai_board, )
             time.sleep(1)
 
 
