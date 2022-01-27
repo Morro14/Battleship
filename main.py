@@ -68,7 +68,6 @@ class Ship:
                 dots_list.append((self.bow[0] + i, self.bow[1]))
         return dots_list
 
-
     def get_health(self):
         return self.health
 
@@ -103,12 +102,19 @@ class Board:
                     board.matrix[y - 1][0]
                 except IndexError:
                     error_count += 1
+                    space(board)
+                    print('      ', end='')
                 else:
                     row(board, y_)
                     print('      ', end='')
             print('\n', end='')
             if error_count >= len(boards):
                 return 1
+
+        def space(board):
+            print(f'      ', end='')
+            for i in range(board.size):
+                print('    ', end='')
 
         def head(boards):
             print(' ')
@@ -117,7 +123,6 @@ class Board:
             print('\n')
 
         def row(board, y):
-
             if y == 0:
                 print('      ', end='')
                 for n in range(board.size):
@@ -185,6 +190,7 @@ class Board:
                     self.non_empty.append(con_dot.t())
 
     def strike(self, dot):
+        #  TODO
         """Checks if the dot"""
         hit, destroyed, miss = 2, 3, 4
         for ship in self.ship_list:
@@ -251,24 +257,20 @@ class AI(Player):
         x = random.randrange(1, self.player_board.size + 1)
         y = random.randrange(1, self.player_board.size + 1)
         dot = Dot(x, y)
-        #  hits, misses = [], []
-        #  hit_count = 0
         print(f"AI is firing at {dot}..")
         return dot
-        #  misses.append(dot)
 
 
 class Game:
 
     def __init__(self):
         self.ai_board = self.random_board(6, 0, "AI's board")
-        self.user_board = self.random_board(6, 0, "User's board")
+        self.user_board = self.random_board(8, 0, "User's board")
         self.user = User(self.user_board, self.ai_board, "User")
         self.ai = AI(self.ai_board, self.user_board, "AI")
-        self.size_ = 6
 
     def random_board(self, size, hid, name):
-        """Generating random ships and placing them on the board"""
+        """Generates random ships, a board, and trying to place the ships on the board"""
 
         ship_x11 = ship_x12 = ship_x13 = ship_x14 = ship_x21 = ship_x22 = ship_x3 = None
         ship_names = [ship_x11, ship_x12, ship_x13, ship_x14, ship_x21, ship_x22, ship_x3]
@@ -292,8 +294,8 @@ class Game:
                 ship_count = 0
                 continue
             else:
-                x = random.randrange(1, 7)
-                y = random.randrange(1, 7)
+                x = random.randrange(1, size+1)
+                y = random.randrange(1, size+1)
                 direction = random.choice(("vertical", "horizontal"))
                 ship = Ship(length[-1 - ship_count], (x, y), direction)
                 if board.add_ship(ship) == 1:
@@ -315,7 +317,7 @@ class Game:
 
     def greet(self):
         print('')
-        print(f'Welcome to Battleship! The game will be going against AI on a {game.size_}x{game.size_} '
+        print(f'Welcome to Battleship! The game will be going against AI on a {self.user_board.size}x{self.ai_board.size} '
               f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
         Board.print(self.user_board, self.ai_board, )
 
