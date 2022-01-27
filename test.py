@@ -18,6 +18,7 @@ class MaxIterError(Error):
 
 class TileError(Error):
     """Error that is called when the tile on the field is not eligible"""
+
     def __init__(self):
         pass
 
@@ -54,6 +55,7 @@ class Ship:
         self.direction = direction
         self.bow = bow
         self.length = length
+        self.dot_list = self.dots()
 
     def dots(self):
         """Returns a list of the ship's coordinates in tuples"""
@@ -79,7 +81,7 @@ class Ship:
 class Board:
     @staticmethod
     def print(*args):
-        """Prints out both fields in a row"""
+        """Prints out both fields in a row."""
         boards_list = args
 
         def column(boards):
@@ -100,12 +102,19 @@ class Board:
                     board.matrix[y - 1][0]
                 except IndexError:
                     error_count += 1
+                    space(board)
+                    print('      ', end='')
                 else:
                     row(board, y_)
                     print('      ', end='')
             print('\n', end='')
             if error_count >= len(boards):
                 return 1
+
+        def space(board):
+            print(f'      ', end='')
+            for i in range(board.size):
+                print('    ', end='')
 
         def head(boards):
             print(' ')
@@ -121,16 +130,16 @@ class Board:
                 return
 
             print(f'  {y}  ', end='')
-
+            """0 - empty, 1 - ship, 2 - hit, 3 - destroyed, 4 - miss"""
             for x in range(board.size):
                 if board.matrix[y - 1][x] == 0:
-                    print('  □ ', end='')
+                    print('  ~ ', end='')
                 if board.matrix[y - 1][x] == 1 and (board.hid == 0):
                     print('  ■ ', end='')
                 if board.matrix[y - 1][x] == 1 and (board.hid == 1):
-                    print('  □ ', end='')
+                    print('  ~ ', end='')
                 if board.matrix[y - 1][x] == 2:
-                    print('  * ', end='')
+                    print('  □ ', end='')
                 if board.matrix[y - 1][x] == 3:
                     print('  X ', end='')
                 if board.matrix[y - 1][x] == 4:
@@ -149,7 +158,7 @@ class Board:
         self.name = name
 
     def add_ship(self, ship: Ship):
-        """Tries to put the ship in the matrix """
+        """Attempts to put the ship's dots in the matrix. Adds its dots into self.non_empty list if successful."""
         dots = ship.dots()
         try:
             for coord in dots:
@@ -163,12 +172,13 @@ class Board:
         except TileError:
             return 1
         else:
+            self.non_empty += ship.dots()
             for coord in dots:
                 dot = Dot(coord)
                 self.matrix[dot.y - 1][dot.x - 1] = 1
 
     def contour(self, ship):
-        """Marks the cells surrounding the ship"""
+        """Adds the cells surrounding the ship into self.non_empty list"""
         ship_dots = ship.dots()
         for i in range(ship.length):
             d = Dot(ship_dots[i][0], ship_dots[i][1])
@@ -180,11 +190,11 @@ class Board:
                     self.non_empty.append(con_dot.t())
 
     def strike(self, dot):
+        #  TODO
+        """Checks if the dot"""
         hit, destroyed, miss = 2, 3, 4
         for ship in self.ship_list:
-
             if dot in ship.dots():
-
                 if ship.health != 1:
                     self.matrix[dot.y - 1][dot.x - 1] = hit
                     hp = ship.get_health()
@@ -192,9 +202,10 @@ class Board:
                     print("Hit")
                     return hit
                 else:
-                    self.matrix[dot.y - 1][dot.x - 1] = destroyed
+                    for d in ship.dots():
+                        self.matrix[d[1] - 1][d[0] - 1] = destroyed
                     self.ship_list.remove(ship)
-                    print(f"A ship has been destroyed!")
+                    print(f"The ship has been destroyed!")
                     return destroyed
 
         self.matrix[dot.y - 1][dot.x - 1] = miss
@@ -209,10 +220,19 @@ class Player:
         self.player_board = player_board
         self.win = None
 
+    def win_check(self):
+        for n in range(7):
+            if len(self.enemy_board.ship_list) == 0:
+                print(f"{self.name} wins!")
+                return True
+        return False
+
     def ask(self):
         pass
 
     def move(self):
+        print(f"{self.name}'s turn...")
+        time.sleep(1)
         result = self.enemy_board.strike(self.ask())
         return result
 
@@ -225,10 +245,12 @@ class User(Player):
 
     def ask(self):
         dot = input("Enter coordinates for a strike (x y): ").split(" ")
-        while len(dot) != 2 and not all([dot[0].isdigit(), dot[1].isdigit()]):
+        while len(dot) != 2 or all([dot[0].isdigit(), dot[1].isdigit()]) == 0:
             dot = input("Enter coordinates for a strike (x y): ").split(" ")
         dot = Dot(tuple(map(int, dot)))
+        time.sleep(1)
         print(f"User is firing at {dot}..")
+        time.sleep(1)
         return dot
 
 
@@ -242,11 +264,8 @@ class AI(Player):
         x = random.randrange(1, self.player_board.size + 1)
         y = random.randrange(1, self.player_board.size + 1)
         dot = Dot(x, y)
-        #  hits, misses = [], []
-        #  hit_count = 0
         print(f"AI is firing at {dot}..")
         return dot
-        #  misses.append(dot)
 
 
 class Game:
@@ -256,16 +275,15 @@ class Game:
         self.user_board = self.random_board(6, 0, "User's board")
         self.user = User(self.user_board, self.ai_board, "User")
         self.ai = AI(self.ai_board, self.user_board, "AI")
-        self.size_ = 6
 
     def random_board(self, size, hid, name):
-        """Generating random ships and placing them on the board"""
+        """Generates random ships, a board, and trying to place the ships on the board"""
 
-        ship_x11  = None
-        ship_names = [ship_x11]
+        ship_x11 = None
+        ship_names = [ship_x11,]
 
         board = Board(size, hid, name)
-        length = [3,]
+        length = [1,]
         loop_count = 0
         ship_count = 0
 
@@ -275,15 +293,16 @@ class Game:
                 if loop_count == 1000:
                     raise MaxIterError(1000)
             except MaxIterError:
-                length = [1, 1, 1, 1, 2, 2, 3]
+                length = [1,]
                 board = Board(size, hid, name)
-                print(f"A maximum number of iterations ({loop_count}) has been reached. Trying again..")
+                print(f"A maximum number of iterations ({loop_count}) has been reached while generating the game "
+                      f"boards. Trying again..")
                 loop_count = 0
                 ship_count = 0
                 continue
             else:
-                x = random.randrange(1, 7)
-                y = random.randrange(1, 7)
+                x = random.randrange(1, size + 1)
+                y = random.randrange(1, size + 1)
                 direction = random.choice(("vertical", "horizontal"))
                 ship = Ship(length[-1 - ship_count], (x, y), direction)
                 if board.add_ship(ship) == 1:
@@ -293,21 +312,15 @@ class Game:
                     ship_count += 1
                     ship_names[-ship_count] = ship
                     board.ship_list.append(ship_names[-ship_count])
-                    board.non_empty += ship.dots()
                     board.contour(ship)
 
         return board
 
-    def win_check(self, player):
-        for n in range(7):
-            if len(player.enemy_board.ship_list) == 0:
-                print(f"{player.name} wins!")
-                return True
-
     def greet(self):
         print('')
-        print(f'Welcome to Battleship! The game will be going against AI on a {game.size_}x{game.size_} '
-              f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
+        print(
+            f'Welcome to Battleship! The game will be going against AI on a {self.user_board.size}x{self.ai_board.size} '
+            f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
         Board.print(self.user_board, self.ai_board, )
 
     def start(self):
@@ -315,23 +328,34 @@ class Game:
         game.loop()
 
     def loop(self):
+        win = None
         while True:
-            print("User's turn:")
             while self.user.move() != 4:  # 4 - miss
-                self.win_check(self.user)
-                time.sleep(2)
+                time.sleep(1)
+                if self.user.win_check():
+                    win = True
+                    time.sleep(1)
+                    continue
                 Board.print(self.user_board, self.ai_board, )
-                time.sleep(2)
+                time.sleep(1)
+            if win is True:
+                break
+            time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
-            print("AI's turn:")
-            time.sleep(2)
+            time.sleep(1)
             while self.ai.move() != 4:  # 4 - miss
-                self.win_check(self.ai)
-                time.sleep(2)
+                time.sleep(1)
+                if self.ai.win_check():
+                    win = True
+                    time.sleep(1)
+                    break
                 Board.print(self.user_board, self.ai_board, )
-                time.sleep(2)
-            time.sleep(2)
+                time.sleep(1)
+            if win is True:
+                break
+            time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
+            time.sleep(1)
 
 
 game = Game()

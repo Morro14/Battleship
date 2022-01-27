@@ -143,7 +143,7 @@ class Board:
                 if board.matrix[y - 1][x] == 3:
                     print('  X ', end='')
                 if board.matrix[y - 1][x] == 4:
-                    print('  - ', end='')
+                    print('  O ', end='')
             print(' ', end='')
 
         head(boards_list)
@@ -220,6 +220,12 @@ class Player:
         self.player_board = player_board
         self.win = None
 
+    def win_check(self):
+        for n in range(7):
+            if len(self.enemy_board.ship_list) == 0:
+                print(f"{self.name} wins!")
+                return True
+
     def ask(self):
         pass
 
@@ -258,14 +264,15 @@ class AI(Player):
         y = random.randrange(1, self.player_board.size + 1)
         dot = Dot(x, y)
         print(f"AI is firing at {dot}..")
+        time.sleep(1)
         return dot
 
 
 class Game:
 
     def __init__(self):
-        self.ai_board = self.random_board(6, 0, "AI's board")
-        self.user_board = self.random_board(8, 0, "User's board")
+        self.ai_board = self.random_board(6, 1, "AI's board")
+        self.user_board = self.random_board(6, 0, "User's board")
         self.user = User(self.user_board, self.ai_board, "User")
         self.ai = AI(self.ai_board, self.user_board, "AI")
 
@@ -294,8 +301,8 @@ class Game:
                 ship_count = 0
                 continue
             else:
-                x = random.randrange(1, size+1)
-                y = random.randrange(1, size+1)
+                x = random.randrange(1, size + 1)
+                y = random.randrange(1, size + 1)
                 direction = random.choice(("vertical", "horizontal"))
                 ship = Ship(length[-1 - ship_count], (x, y), direction)
                 if board.add_ship(ship) == 1:
@@ -309,16 +316,11 @@ class Game:
 
         return board
 
-    def win_check(self, player):
-        for n in range(7):
-            if len(player.enemy_board.ship_list) == 0:
-                print(f"{player.name} wins!")
-                return True
-
     def greet(self):
         print('')
-        print(f'Welcome to Battleship! The game will be going against AI on a {self.user_board.size}x{self.ai_board.size} '
-              f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
+        print(
+            f'Welcome to Battleship! The game will be going against AI on a {self.user_board.size}x{self.ai_board.size} '
+            f'field. \nDuring your turn, enter the coordinates of your strike in a "x y" format.')
         Board.print(self.user_board, self.ai_board, )
 
     def start(self):
@@ -326,24 +328,34 @@ class Game:
         game.loop()
 
     def loop(self):
+        win = None
         while True:
-
             while self.user.move() != 4:  # 4 - miss
-                self.win_check(self.user)
                 time.sleep(1)
+                if self.user.win_check():
+                    win = True
+                    time.sleep(1)
+                    continue
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
+            if win is True:
+                break
             time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
-
             time.sleep(1)
             while self.ai.move() != 4:  # 4 - miss
-                self.win_check(self.ai)
                 time.sleep(1)
+                if self.ai.win_check():
+                    win = True
+                    time.sleep(1)
+                    break
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
+            if win is True:
+                break
             time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
+            time.sleep(1)
 
 
 game = Game()
