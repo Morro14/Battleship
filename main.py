@@ -19,9 +19,6 @@ class MaxIterError(Error):
 class TileError(Error):
     """Error that is called when the tile on the field is not eligible"""
 
-    def __init__(self):
-        pass
-
     def __str__(self):
         return str("Tile is occupied")
 
@@ -157,31 +154,31 @@ class Board:
         self.non_empty = []
         self.name = name
 
+    def out(self, dot):
+        return dot.x < 1 or dot.x > self.size or dot.y < 1 or dot.y > self.size
+
     def add_ship(self, ship: Ship):
         """Attempts to put the ship's dots in the matrix. Adds its dots into self.non_empty list if successful."""
         dots = ship.dots()
-        try:
-            for coord in dots:
-                dot = Dot(coord)
-                if dot in self.non_empty:
-                    raise TileError
-                if self.matrix[dot.y - 1][dot.x - 1] is not None:
-                    pass
-        except IndexError:
-            return 1
-        except TileError:
-            return 1
-        else:
-            self.non_empty += ship.dots()
-            for coord in dots:
-                dot = Dot(coord)
-                self.matrix[dot.y - 1][dot.x - 1] = 1
+#        try:
+        for coord in dots:
+            dot = Dot(coord)
+            if dot in self.non_empty or self.out(dot):
+                raise TileError
+#        except IndexError:
+#            return 1
+#        except TileError:
+#            return 1
+
+        self.non_empty += ship.dots()
+        for coord in dots:
+            dot = Dot(coord)
+            self.matrix[dot.y - 1][dot.x - 1] = 1
 
     def contour(self, ship):
         """Adds the cells surrounding the ship into self.non_empty list"""
-        ship_dots = ship.dots()
-        for i in range(ship.length):
-            d = Dot(ship_dots[i][0], ship_dots[i][1])
+        for tuple_ in ship.dots():
+            d = Dot(tuple_)
             con_list = [(d.x - 1, d.y - 1), (d.x, d.y - 1), (d.x + 1, d.y - 1), (d.x - 1, d.y), (d.x + 1, d.y),
                         (d.x - 1, d.y + 1), (d.x, d.y + 1), (d.x + 1, d.y + 1)]
             for n in con_list:
@@ -232,6 +229,7 @@ class Player:
     def move(self):
         print(f"{self.name}'s turn...")
         time.sleep(1)
+
         result = self.enemy_board.strike(self.ask())
         return result
 
@@ -241,12 +239,28 @@ class User(Player):
         self.name = name
         self.enemy_board = enemy_board
         self.player_board = player_board
+        self.turns_list = []
 
     def ask(self):
-        dot = input("Enter coordinates for a strike (x y): ").split(" ")
-        while len(dot) != 2 or all([dot[0].isdigit(), dot[1].isdigit()]) == 0:
+
+        while True:
             dot = input("Enter coordinates for a strike (x y): ").split(" ")
-        dot = Dot(tuple(map(int, dot)))
+            time.sleep(1)
+            if len(dot) == 2 and all([dot[0].isdigit(), dot[1].isdigit()]) == 1:
+                dot = Dot(tuple(map(int, dot)))
+                if self.enemy_board.out(dot):
+                    print("Coordinates are outside the board.")
+                    continue
+                if dot in self.turns_list:
+                    print("You have already fired at these coordinates.")
+                    continue
+                self.turns_list.append(dot)
+                return dot
+            else:
+                print("Coordinates must be digits.")
+                continue
+
+
         time.sleep(1)
         print(f"User is firing at {dot}..")
         time.sleep(1)
@@ -258,11 +272,17 @@ class AI(Player):
         self.name = name
         self.enemy_board = enemy_board
         self.player_board = player_board
+        self.turns_list = []
 
     def ask(self):
         x = random.randrange(1, self.player_board.size + 1)
         y = random.randrange(1, self.player_board.size + 1)
         dot = Dot(x, y)
+        while dot in self.turns_list:
+            x = random.randrange(1, self.player_board.size + 1)
+            y = random.randrange(1, self.player_board.size + 1)
+            dot = Dot(x, y)
+        self.turns_list.append(dot)
         print(f"AI is firing at {dot}..")
         time.sleep(1)
         return dot
@@ -305,7 +325,10 @@ class Game:
                 y = random.randrange(1, size + 1)
                 direction = random.choice(("vertical", "horizontal"))
                 ship = Ship(length[-1 - ship_count], (x, y), direction)
-                if board.add_ship(ship) == 1:
+                try:
+                    board.add_ship(ship)
+
+                except TileError:
                     loop_count += 1
                     continue
                 else:
@@ -328,30 +351,22 @@ class Game:
         game.loop()
 
     def loop(self):
-        win = None
         while True:
             while self.user.move() != 4:  # 4 - miss
                 time.sleep(1)
-                if self.user.win_check():
-                    win = True
-                    time.sleep(1)
-                    continue
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
-            if win is True:
+            if self.user.win_check():
                 break
             time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
             time.sleep(1)
+
             while self.ai.move() != 4:  # 4 - miss
                 time.sleep(1)
-                if self.ai.win_check():
-                    win = True
-                    time.sleep(1)
-                    break
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
-            if win is True:
+            if self.ai.win_check():
                 break
             time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
