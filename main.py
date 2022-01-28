@@ -2,12 +2,12 @@ import random
 import time
 
 
-class Error(Exception):
+class MyExceptions(Exception):
     pass
 
 
-class MaxIterError(Error):
-    """Error that is called when a certain number of iterations occurred"""
+class MaxIterException(MyExceptions):
+    """An exception for a maximum number of iterations"""
 
     def __init__(self, limit):
         self.limit = limit
@@ -16,15 +16,12 @@ class MaxIterError(Error):
         return str(f"A maximum number of iterations {self.limit} has been reached.")
 
 
-class TileBusyException(Error):
-    """Error that is called when the tile on the field is not eligible"""
-
+class TileBusyException(MyExceptions):
     def __str__(self):
-        return str("Tile is occupied")
+        return str("The tile is occupied")
 
 
 class Dot:
-
     def __init__(self, *args):
         if type(args[0]) == tuple:
             self.x = args[0][0]
@@ -78,7 +75,7 @@ class Ship:
 class Board:
     @staticmethod
     def print(*args):
-        """Prints out both fields in a row."""
+        """Prints out both fields in a row. Columns """
         boards_list = args
 
         def column(boards):
@@ -116,17 +113,18 @@ class Board:
         def head(boards):
             print(' ')
             for b in boards:
-                print(f'            {b.name}            ', end='')
+                print(' ' * (b.size * 2) + f'{b.name}' + ' ' * (b.size * 2) + '', end='')
+
             print('\n')
 
         def row(board, y):
             if y == 0:
                 print('      ', end='')
                 for n in range(board.size):
-                    print(f' {n + 1}  ', end='')
+                    print(f' {n + 1}  ', end='') if n < 9 else print(f'{n + 1}  ', end='')
                 return
 
-            print(f'  {y}  ', end='')
+            print('  %2d ' % (y), end='')
             """0 - empty, 1 - ship, 2 - hit, 3 - destroyed, 4 - miss"""
             for x in range(board.size):
                 if board.matrix[y - 1][x] == 0:
@@ -158,7 +156,7 @@ class Board:
         return dot.x < 1 or dot.x > self.size or dot.y < 1 or dot.y > self.size
 
     def add_ship(self, ship: Ship):
-        """Attempts to put the ship's dots in the matrix. Adds its dots into self.non_empty list if successful."""
+        """Attempts to put the ship's dots in the matrix and adds them into self.non_empty list if successful."""
         dots = ship.dots()
         for coord in dots:
             dot = Dot(coord)
@@ -182,8 +180,7 @@ class Board:
                     self.non_empty.append(con_dot.t())
 
     def strike(self, dot):
-        #  TODO
-        """Checks if the dot"""
+        """Checks if the strike's coordinates match any ship tile, adds the result into the matrix, and returns it"""
         hit, destroyed, miss = 2, 3, 4
         for ship in self.ship_list:
             if dot in ship.dots():
@@ -210,9 +207,9 @@ class Player:
         self.name = name
         self.enemy_board = enemy_board
         self.player_board = player_board
-        self.win = None
 
     def win_check(self):
+        """Checks the ship list of the enemy"""
         for n in range(7):
             if len(self.enemy_board.ship_list) == 0:
                 print(f"{self.name} wins!")
@@ -237,22 +234,21 @@ class User(Player):
         self.turns_list = []
 
     def ask(self):
-
         while True:
             dot = input("Enter coordinates for a strike (x y): ").split(" ")
             time.sleep(1)
-            if len(dot) == 2 and all([dot[0].isdigit(), dot[1].isdigit()]) == 1:
+            try:
                 dot = Dot(tuple(map(int, dot)))
                 if self.enemy_board.out(dot):
-                    print("Coordinates are outside the board.")
+                    print("Coordinates are outside of the board.")
                     continue
                 if dot in self.turns_list:
                     print("You have already fired at these coordinates.")
                     continue
                 self.turns_list.append(dot)
                 return dot
-            else:
-                print("Coordinates must be digits.")
+            except ValueError:
+                print("Incorrect coordinates.")
                 continue
 
         time.sleep(1)
@@ -291,7 +287,7 @@ class Game:
         self.ai = AI(self.ai_board, self.user_board, "AI")
 
     def random_board(self, size, hid, name):
-        """Generates random ships, a board, and trying to place the ships on the board"""
+        """Generates random ships, a board, and trying to place the ships onto the board"""
 
         ship_x11 = ship_x12 = ship_x13 = ship_x14 = ship_x21 = ship_x22 = ship_x3 = None
         ship_names = [ship_x11, ship_x12, ship_x13, ship_x14, ship_x21, ship_x22, ship_x3]
@@ -305,11 +301,11 @@ class Game:
 
             try:
                 if loop_count == 1000:
-                    raise MaxIterError(1000)
-            except MaxIterError:
+                    raise MaxIterException(1000)
+            except MaxIterException:
                 length = [1, 1, 1, 1, 2, 2, 3]
                 board = Board(size, hid, name)
-                print(f"A maximum number of iterations ({loop_count}) has been reached while generating the game "
+                print(f"A maximum number of iterations ({loop_count}) has been reached while generating the "
                       f"boards. Trying again..")
                 loop_count = 0
                 ship_count = 0
@@ -343,21 +339,29 @@ class Game:
         game.loop()
 
     def loop(self):
+        win = False
         while True:
             Board.print(self.user_board, self.ai_board, )
-            while self.user.move() != 4:  # 4 - miss
+            while True:
+                result = self.user.move()
                 time.sleep(1)
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
-            if self.user.win_check():
+                win = self.user.win_check()
+                if win or result == 4:  # 4 - miss
+                    break
+            if win:
                 break
             time.sleep(1)
             Board.print(self.user_board, self.ai_board, )
             time.sleep(1)
 
-            while self.ai.move() != 4:  # 4 - miss
+            while True:
                 time.sleep(1)
-            if self.ai.win_check():
+                win = self.user.win_check()
+                if win or result == 4:  # 4 - miss
+                    break
+            if win:
                 break
             time.sleep(1)
 
