@@ -75,7 +75,7 @@ class Ship:
 class Board:
     @staticmethod
     def print(*args):
-        """Prints out both fields in a row. Columns """
+        """Prints out both fields in a row."""
         boards_list = args
 
         def column(boards):
@@ -156,7 +156,7 @@ class Board:
         return dot.x < 1 or dot.x > self.size or dot.y < 1 or dot.y > self.size
 
     def add_ship(self, ship: Ship):
-        """Attempts to put the ship's dots in the matrix and adds them into self.non_empty list if successful."""
+        """Attempts to put the ship dots in the matrix and adds them into self.non_empty list if successful."""
         dots = ship.dots()
         for coord in dots:
             dot = Dot(coord)
@@ -180,7 +180,7 @@ class Board:
                     self.non_empty.append(con_dot.t())
 
     def strike(self, dot):
-        """Checks if the strike's coordinates match any ship tile, adds the result into the matrix, and returns it"""
+        """Checks if the strike coordinates match any ship tile, adds the result into the matrix, and returns it"""
         hit, destroyed, miss = 2, 3, 4
         for ship in self.ship_list:
             if dot in ship.dots():
@@ -209,7 +209,6 @@ class Player:
         self.player_board = player_board
 
     def win_check(self):
-        """Checks the ship list of the enemy"""
         for n in range(7):
             if len(self.enemy_board.ship_list) == 0:
                 print(f"{self.name} wins!")
@@ -348,22 +347,20 @@ class Game:
                 Board.print(self.user_board, self.ai_board, )
                 time.sleep(1)
                 win = self.user.win_check()
-                if win or result == 4:  # 4 - miss
+                if win or (result == 4):  # 4 - miss
                     break
             if win:
                 break
-            time.sleep(1)
-            Board.print(self.user_board, self.ai_board, )
-            time.sleep(1)
 
             while True:
+                result = self.ai.move()
                 time.sleep(1)
-                win = self.user.win_check()
-                if win or result == 4:  # 4 - miss
+                win = self.ai.win_check()
+                if win or (result == 4):  # 4 - miss
                     break
             if win:
                 break
-            time.sleep(1)
+#            time.sleep(1)
 
 
 game = Game()
