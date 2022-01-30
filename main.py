@@ -234,7 +234,7 @@ class User(Player):
 
     def ask(self):
         while True:
-            dot = input("Enter coordinates for a strike (x y): ").split(" ")
+            dot = input("Enter coordinates for the strike (x y): ").split(" ")
             time.sleep(1)
             try:
                 dot = Dot(tuple(map(int, dot)))
