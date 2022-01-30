@@ -7,7 +7,7 @@ class MyExceptions(Exception):
 
 
 class MaxIterException(MyExceptions):
-    """An exception for a maximum number of iterations"""
+    """An exception for the maximum number of iterations"""
 
     def __init__(self, limit):
         self.limit = limit
