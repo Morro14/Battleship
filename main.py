@@ -7,7 +7,7 @@ class MyExceptions(Exception):
 
 
 class MaxIterException(MyExceptions):
-    """An exception for the maximum number of iterations"""
+    """Exception for the maximum number of iterations"""
 
     def __init__(self, limit):
         self.limit = limit
@@ -156,7 +156,7 @@ class Board:
         return dot.x < 1 or dot.x > self.size or dot.y < 1 or dot.y > self.size
 
     def add_ship(self, ship: Ship):
-        """Attempts to put the ship dots in the matrix and adds them into self.non_empty list if successful."""
+        """Attempts to put ship dots in the matrix and adds them into self.non_empty list if successful."""
         dots = ship.dots()
         for coord in dots:
             dot = Dot(coord)
@@ -169,7 +169,7 @@ class Board:
             self.matrix[dot.y - 1][dot.x - 1] = 1
 
     def contour(self, ship):
-        """Adds the cells surrounding the ship into self.non_empty list"""
+        """Adds cells surrounding the ship into self.non_empty list"""
         for tuple_ in ship.dots():
             d = Dot(tuple_)
             con_list = [(d.x - 1, d.y - 1), (d.x, d.y - 1), (d.x + 1, d.y - 1), (d.x - 1, d.y), (d.x + 1, d.y),
@@ -234,7 +234,7 @@ class User(Player):
 
     def ask(self):
         while True:
-            dot = input("Enter coordinates for the strike (x y): ").split(" ")
+            dot = input("Enter coordinates for a strike (x y): ").split(" ")
             time.sleep(1)
             try:
                 dot = Dot(tuple(map(int, dot)))
